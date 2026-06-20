@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BotSignal — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #533afd;
+      --human: #15be53;
+      --agent: #ef4444;
+      --unknown: #f59e0b;
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Header */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px; background: var(--accent);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 16px;
+    }
+    .logo h1 {
+      font-size: 22px; font-weight: 600; letter-spacing: -0.3px;
+    }
+    .logo span {
+      font-size: 13px; color: var(--muted); font-weight: 400;
+    }
+    .last-updated {
+      font-size: 13px; color: var(--muted);
+    }
+    .refresh-btn {
+      padding: 6px 14px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 4px; cursor: pointer; font-family: var(--font);
+      font-size: 13px; color: var(--text); transition: all 0.15s;
+    }
+    .refresh-btn:hover { background: #f1f5f9; }
+
+    /* Summary Cards */
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 32px;
+    }
+    .summary-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px;
+    }
+    .summary-card .label {
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .summary-card .value {
+      font-size: 28px; font-weight: 600; margin-top: 4px;
+    }
+    .summary-card .sub {
+      font-size: 13px; color: var(--muted); margin-top: 2px;
+    }
+    .value.human { color: var(--human); }
+    .value.agent { color: var(--agent); }
+    .value.unknown { color: var(--unknown); }
+    .value.accent { color: var(--accent); }
+
+    /* Two-column layout */
+    .grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-bottom: 32px;
+    }
+    @media (max-width: 800px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+      body { padding: 16px; }
+    }
+
+    /* Card */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+    }
+    .card h2 {
+      font-size: 15px; font-weight: 600; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .card h2 .badge {
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      background: var(--bg); padding: 2px 8px; border-radius: 3px;
+      margin-left: 8px;
+    }
+    .card-empty {
+      text-align: center; padding: 40px 20px; color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Hourly chart */
+    .chart-bar-container {
+      display: flex; align-items: flex-end; gap: 3px;
+      height: 120px; margin-top: 16px;
+    }
+    .chart-column {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 4px;
+    }
+    .chart-stack {
+      width: 100%; display: flex; flex-direction: column-reverse;
+      height: 100px; border-radius: 3px 3px 0 0; overflow: hidden;
+    }
+    .chart-segment { width: 100%; transition: height 0.3s; }
+    .chart-segment.human { background: var(--human); }
+    .chart-segment.agent { background: var(--agent); }
+    .chart-segment.unknown { background: var(--unknown); }
+    .chart-label {
+      font-size: 10px; color: var(--muted); font-family: var(--mono);
+    }
+    .chart-legend {
+      display: flex; gap: 16px; margin-top: 12px; font-size: 12px;
+    }
+    .chart-legend span {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .chart-legend .dot {
+      width: 8px; height: 8px; border-radius: 2px;
+    }
+
+    /* Sites table */
+    .sites-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .sites-table th {
+      text-align: left; font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 8px 12px; border-bottom: 2px solid var(--border);
+    }
+    .sites-table td {
+      padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border);
+    }
+    .sites-table tr:hover td { background: #f8fafc; }
+    .bar {
+      display: inline-block; height: 8px; border-radius: 4px;
+      margin-right: 4px;
+    }
+    .bar.human { background: var(--human); }
+    .bar.agent { background: var(--agent); }
+    .bar.unknown { background: var(--unknown); }
+    .pct-bar {
+      display: flex; gap: 2px; width: 120px;
+    }
+    .pct-bar .seg {
+      height: 8px; border-radius: 2px;
+    }
+
+    /* Recent visits */
+    .visit-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+    }
+    .visit-row:last-child { border-bottom: none; }
+    .visit-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .visit-dot.human { background: var(--human); }
+    .visit-dot.agent { background: var(--agent); }
+    .visit-dot.unknown { background: var(--unknown); }
+    .visit-url {
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      color: var(--text);
+    }
+    .visit-time {
+      font-size: 11px; color: var(--muted); font-family: var(--mono);
+      flex-shrink: 0;
+    }
+    .visit-conf {
+      font-size: 11px; font-family: var(--mono); font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    /* Self-check */
+    .self-check {
+      margin-top: 32px; padding: 16px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .self-check .label { font-size: 13px; color: var(--muted); }
+    .self-check .result {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .self-check .result .cls {
+      font-weight: 600; font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">BS</div>
+      <div>
+        <h1>BotSignal</h1>
+        <span>Visitor Intelligence for the AI Age</span>
+      </div>
+    </div>
+    <div>
+      <span class="last-updated" id="lastUpdated">—</span>
+      <button class="refresh-btn" onclick="refresh()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <!-- Summary -->
+  <div class="summary-grid" id="summaryCards">
+    <div class="summary-card"><div class="label">Total Sites</div><div class="value accent" id="totalSites">—</div></div>
+    <div class="summary-card"><div class="label">Total Visits</div><div class="value accent" id="totalVisits">—</div></div>
+    <div class="summary-card"><div class="label">Humans</div><div class="value human" id="totalHumans">—</div><div class="sub" id="humanPct"></div></div>
+    <div class="summary-card"><div class="label">Agents / Bots</div><div class="value agent" id="totalAgents">—</div><div class="sub" id="agentPct"></div></div>
+  </div>
+
+  <!-- Hourly + Sites -->
+  <div class="grid-2">
+    <div class="card">
+      <h2>Traffic (Last 24h)</h2>
+      <div id="hourlyChart"><div class="card-empty">Loading...</div></div>
+    </div>
+    <div class="card">
+      <h2>Recent Hour <span class="badge" id="recentHourBadge">—</span></h2>
+      <div id="recentHour"><div class="card-empty">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Sites -->
+  <div class="card" style="margin-bottom:32px;">
+    <h2>Sites</h2>
+    <div id="sitesTable"><div class="card-empty">Loading...</div></div>
+  </div>
+
+  <!-- Self Check -->
+  <div class="self-check">
+    <div>
+      <div class="label">Your Current Session</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="selfUa"></div>
+    </div>
+    <div class="result">
+      <div class="cls" id="selfClass">—</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);" id="selfConf"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:24px;font-size:12px;color:var(--muted);">
+    BotSignal &mdash; Open Source &middot; <a href="https://github.com/MatthewBlodgett/botsignal" style="color:var(--accent);text-decoration:none;">GitHub</a>
+  </div>
+
+</div>
+
+<script>
+var API_BASE = '';
+
+function $(id) { return document.getElementById(id); }
+
+async function api(path) {
+  var resp = await fetch(API_BASE + path);
+  return resp.json();
+}
+
+function fmtNum(n) { return n.toLocaleString(); }
+function fmtPct(n) { return n.toFixed(1) + '%'; }
+function fmtTime(ts) {
+  var d = new Date(ts * 1000);
+  var now = new Date();
+  var diff = Math.round((now - d) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff < 60) return diff + 'm ago';
+  if (diff < 1440) return Math.round(diff / 60) + 'h ago';
+  return d.toLocaleDateString();
+}
+
+async function refresh() {
+  // Overview
+  var overview = await api('/api/overview');
+  var totals = overview.totals;
+  var total = totals.total || 0;
+
+  $('totalSites').textContent = fmtNum(totals.site_count);
+  $('totalVisits').textContent = fmtNum(total);
+  $('totalHumans').textContent = fmtNum(totals.humans);
+  $('totalAgents').textContent = fmtNum(totals.agents);
+
+  if (total > 0) {
+    $('humanPct').textContent = fmtPct((totals.humans / total) * 100) + ' of traffic';
+    $('agentPct').textContent = fmtPct((totals.agents / total) * 100) + ' of traffic';
+  }
+
+  // Hourly chart
+  var hourly = overview.hourly_24h || [];
+  renderHourly(hourly);
+
+  // Recent hour
+  var recent = overview.recent_hour || {};
+  var totalRecent = (recent.human || 0) + (recent.agent || 0) + (recent.unknown || 0);
+  $('recentHourBadge').textContent = totalRecent + ' visits';
+  renderRecentHour(recent, totalRecent);
+
+  // Sites
+  var sites = await api('/api/sites');
+  renderSites(sites);
+
+  // Self check
+  var check = await api('/api/check');
+  $('selfClass').textContent = check.classification;
+  $('selfConf').textContent = check.confidence + '% confidence';
+  $('selfClass').style.color = check.classification === 'human' ? 'var(--human)' :
+      check.classification === 'agent' ? 'var(--agent)' : 'var(--unknown)';
+  $('selfUa').textContent = (check.your_user_agent || '').substring(0, 80);
+
+  $('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+function renderHourly(hourly) {
+  var container = $('hourlyChart');
+  if (!hourly.length) {
+    container.innerHTML = '<div class="card-empty">No data yet. Install the tracker on a site to see traffic.</div>';
+    return;
+  }
+
+  var maxVisits = Math.max.apply(null, hourly.map(function(h) {
+    return (h.human || 0) + (h.agent || 0) + (h.unknown || 0);
+  }));
+
+  var html = '<div class="chart-bar-container">';
+  hourly.forEach(function(h) {
+    var totalH = (h.human || 0) + (h.agent || 0) + (h.unknown || 0);
+    var hPct = maxVisits > 0 ? ((h.human || 0) / maxVisits) * 100 : 0;
+    var aPct = maxVisits > 0 ? ((h.agent || 0) / maxVisits) * 100 : 0;
+    var uPct = maxVisits > 0 ? ((h.unknown || 0) / maxVisits) * 100 : 0;
+
+    html += '<div class="chart-column">';
+    html += '<div style="font-size:10px;color:var(--muted);font-family:var(--mono);font-weight:500;">' + totalH + '</div>';
+    html += '<div class="chart-stack">';
+    if (h.human) html += '<div class="chart-segment human" style="height:' + hPct + '%;"></div>';
+    if (h.unknown) html += '<div class="chart-segment unknown" style="height:' + uPct + '%;"></div>';
+    if (h.agent) html += '<div class="chart-segment agent" style="height:' + aPct + '%;"></div>';
+    html += '</div>';
+    html += '<div class="chart-label">' + h.hour + 'h</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div class="chart-legend">';
+  html += '<span><span class="dot" style="background:var(--human)"></span> Human</span>';
+  html += '<span><span class="dot" style="background:var(--unknown)"></span> Unknown</span>';
+  html += '<span><span class="dot" style="background:var(--agent)"></span> Agent</span>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function renderRecentHour(recent, total) {
+  var container = $('recentHour');
+  if (total === 0) {
+    container.innerHTML = '<div class="card-empty">No traffic in the last hour.</div>';
+    return;
+  }
+
+  var items = [];
+  if (recent.human) items.push({ cls: 'human', count: recent.human, pct: (recent.human / total) * 100 });
+  if (recent.unknown) items.push({ cls: 'unknown', count: recent.unknown, pct: (recent.unknown / total) * 100 });
+  if (recent.agent) items.push({ cls: 'agent', count: recent.agent, pct: (recent.agent / total) * 100 });
+
+  var html = '';
+  items.forEach(function(item) {
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;">';
+    html += '<div class="visit-dot ' + item.cls + '"></div>';
+    html += '<div style="flex:1;">';
+    html += '<div style="font-size:14px;font-weight:500;text-transform:capitalize;">' + item.cls + '</div>';
+    html += '<div style="display:flex;height:6px;background:#f1f5f9;border-radius:3px;margin-top:4px;overflow:hidden;">';
+    html += '<div style="width:' + item.pct + '%;background:' + (item.cls === 'human' ? 'var(--human)' : item.cls === 'agent' ? 'var(--agent)' : 'var(--unknown)') + ';"></div>';
+    html += '</div></div>';
+    html += '<div style="font-weight:600;font-size:14px;font-family:var(--mono);">' + item.count + '</div>';
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function renderSites(sites) {
+  var container = $('sitesTable');
+  if (!sites.length) {
+    container.innerHTML = '<div class="card-empty">No sites registered yet. Deploy the tracker snippet to get started.</div>';
+    return;
+  }
+
+  var html = '<table class="sites-table"><thead><tr>' +
+    '<th>Site</th><th>Visits</th><th>Human</th><th>Agent</th><th>Breakdown</th><th>Last Visit</th></tr></thead><tbody>';
+
+  sites.forEach(function(s) {
+    var total = s.total_visits || 1;
+    // Generate a 100px breakdown bar
+    var hPx = Math.round((s.human_visits / total) * 100);
+    var aPx = Math.round((s.agent_visits / total) * 100);
+    var uPx = 100 - hPx - aPx;
+    if (uPx < 0) uPx = 0;
+
+    html += '<tr>';
+    html += '<td><strong>' + s.id + '</strong></td>';
+    html += '<td>' + s.total_visits + '</td>';
+    html += '<td style="color:var(--human);">' + s.human_visits + ' <span style="color:var(--muted);font-size:11px;">(' + s.human_pct + '%)</span></td>';
+    html += '<td style="color:var(--agent);">' + s.agent_visits + ' <span style="color:var(--muted);font-size:11px;">(' + s.agent_pct + '%)</span></td>';
+    html += '<td><div class="pct-bar">';
+    if (hPx > 0) html += '<div class="seg" style="background:var(--human);width:' + hPx + 'px;"></div>';
+    if (uPx > 0) html += '<div class="seg" style="background:var(--unknown);width:' + uPx + 'px;"></div>';
+    if (aPx > 0) html += '<div class="seg" style="background:var(--agent);width:' + aPx + 'px;"></div>';
+    html += '</div></td>';
+    html += '<td style="color:var(--muted);font-size:12px;">' + fmtTime(s.created_at) + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+// Auto-refresh every 30s
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>
